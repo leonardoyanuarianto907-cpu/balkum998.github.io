@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ATM Sederhana</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#06b6d4;
+      --muted:#94a3b8;
+      --success:#16a34a;
+      --danger:#ef4444;
+      --glass: rgba(255,255,255,0.03);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        radial-gradient(800px 600px at 10% 20%, rgba(6,182,212,0.06), transparent 10%),
+        radial-gradient(800px 500px at 90% 80%, rgba(99,102,241,0.04), transparent 10%),
+        var(--bg);
+      color:#e6eef8;
+      padding:24px;
+    }
+
+    .atm {
+      width:100%;
+      max-width:920px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:16px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:18px;
+      padding:18px;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+
+    /* Left panel - saldo + actions */
+    .panel {
+      background:var(--card);
+      border-radius:12px;
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-height:300px;
+    }
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .logo {
+      width:54px;height:54px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6366f1);
+      display:flex;align-items:center;justify-content:center;font-weight:700;color:#022;
+      box-shadow:0 6px 18px rgba(6,182,212,0.08), inset 0 -6px 18px rgba(255,255,255,0.02);
+    }
+    h1{font-size:18px;margin:0}
+    p.muted{margin:0;color:var(--muted);font-size:13px}
+
+    .saldo-box{
+      margin-top:6px;
+      background:var(--glass);
+      border:1px solid rgba(255,255,255,0.02);
+      padding:14px;border-radius:10px;
+      display:flex;flex-direction:column;gap:6px;
+    }
+    .saldo-label{font-size:13px;color:var(--muted)}
+    .saldo-amount{font-size:24px;font-weight:700}
+
+    .actions {
+      display:flex;
+      gap:8px;
+      margin-top:6px;
+      flex-wrap:wrap;
+    }
+    .btn {
+      background:transparent;border:1px solid rgba(255,255,255,0.06);
+      padding:10px 12px;border-radius:10px;color:inherit;cursor:pointer;
+      min-width:120px;text-align:center;font-weight:600;
+      transition:all .16s ease;
+    }
+    .btn:hover{transform:translateY(-4px); box-shadow:0 8px 18px rgba(2,6,23,0.6)}
+    .btn.primary{
+      background:linear-gradient(90deg,var(--accent),#6366f1);
+      color:#02101a;border: none;
+    }
+    .btn.warn{border-color:rgba(255,165,0,0.16)}
+    .btn.danger{border-color: rgba(239,68,68,0.16)}
+
+    /* Right panel - forms & log */
+    .right {
+      display:flex;flex-direction:column;gap:12px;
+    }
+    .card {
+      background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
+      border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.02);
+    }
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+    input[type="number"], input[type="text"]{
+      width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);
+      background:transparent;color:inherit;font-size:15px;
+    }
+    .row{display:flex;gap:8px}
+    .row .col{flex:1}
+
+    .notif{
+      padding:10px;border-radius:10px;font-weight:600;font-size:14px;
+    }
+    .notif.success{background:linear-gradient(90deg, rgba(22,163,74,0.12), rgba(6,182,212,0.03)); color:var(--success); border:1px solid rgba(22,163,74,0.08)}
+    .notif.error{background:linear-gradient(90deg, rgba(239,68,68,0.08), rgba(6,182,212,0.02)); color:var(--danger); border:1px solid rgba(239,68,68,0.06)}
+
+    .log-list{max-height:260px;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:8px}
+    .log-item{font-size:13px;color:var(--muted);padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.01)}
+
+    footer.help{font-size:13px;color:var(--muted);text-align:center;padding-top:6px}
+    @media (max-width:880px){
+      .atm{grid-template-columns:1fr; padding:12px}
+    }
+  </style>
+</head>
+<body>
+  <main class="atm" role="application" aria-label="Simulasi ATM">
+    <section class="panel" aria-hidden="false">
+      <div class="brand">
+        <div class="logo">ATM</div>
+        <div>
+          <h1>ATM Latif Yoga</h1>
+          <p class="muted">Selamat datang — gunakan tombol di bawah untuk bertransaksi.</p>
+        </div>
+      </div>
+
+      <div class="saldo-box" aria-live="polite">
+        <div class="saldo-label">Saldo Anda</div>
+        <div id="saldo" class="saldo-amount">Rp500.000</div>
+        <div id="notifArea" style="margin-top:8px"></div>
+      </div>
+
+      <div class="actions" role="group" aria-label="Aksi">
+        <button class="btn" id="cekBtn">Cek Saldo</button>
+        <button class="btn primary" id="tarikBtn">Tarik Tunai</button>
+        <button class="btn" id="setorBtn">Setor Tunai</button>
+        <button class="btn danger" id="keluarBtn">Keluar</button>
+      </div>
+
+      <div style="margin-top:auto">
+        <p class="muted" style="font-size:12px;margin:0">Tip: Nominal harus angka positif. Sistem menolak penarikan jika saldo tidak cukup.</p>
+      </div>
+    </section>
+
+    <section class="right">
+      <div class="card" id="formCard">
+        <h3 style="margin:0 0 10px 0">Form Transaksi</h3>
+
+        <!-- Form tarik -->
+        <div id="tarikForm" style="display:none">
+          <label for="tarikInput">Masukkan jumlah tarik (Rp)</label>
+          <div class="row">
+            <div class="col"><input id="tarikInput" type="number" min="1" step="1000" placeholder="Contoh: 50000"></div>
+            <div><button class="btn primary" id="doTarik">Tarik</button></div>
+          </div>
+        </div>
+
+        <!-- Form setor -->
+        <div id="setorForm" style="display:none">
+          <label for="setorInput">Masukkan jumlah setor (Rp)</label>
+          <div class="row">
+            <div class="col"><input id="setorInput" type="number" min="1" step="1000" placeholder="Contoh: 150000"></div>
+            <div><button class="btn" id="doSetor">Setor</button></div>
+          </div>
+        </div>
+
+        <!-- Default info -->
+        <div id="infoDefault">
+          <p style="margin:0;color:var(--muted)">Pilih aksi di sebelah kiri untuk melakukan transaksi. Riwayat transaksi muncul di bawah.</p>
+        </div>
+      </div>
+
+      <div class="card" aria-label="Riwayat transaksi">
+        <h3 style="margin:0 0 8px 0">Riwayat Transaksi</h3>
+        <div class="log-list" id="logList" aria-live="polite">
+          <!-- items -->
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column;gap:8px;align-items:center">
+        <div class="help" style="width:100%">
+          <p class="muted" style="margin:0">Versi demo — tidak terhubung ke bank nyata.</p>
+        </div>
+        <footer class="help">Butuh fitur lain? bilang aja.</footer>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Inisialisasi saldo
+    let saldo = 500000;
+    const saldoEl = document.getElementById('saldo');
+    const notifArea = document.getElementById('notifArea');
+    const logList = document.getElementById('logList');
+
+    // Elemen tombol & form
+    const cekBtn = document.getElementById('cekBtn');
+    const tarikBtn = document.getElementById('tarikBtn');
+    const setorBtn = document.getElementById('setorBtn');
+    const keluarBtn = document.getElementById('keluarBtn');
+    const tarikForm = document.getElementById('tarikForm');
+    const setorForm = document.getElementById('setorForm');
+    const infoDefault = document.getElementById('infoDefault');
+    const tarikInput = document.getElementById('tarikInput');
+    const setorInput = document.getElementById('setorInput');
+    const doTarik = document.getElementById('doTarik');
+    const doSetor = document.getElementById('doSetor');
+
+    // utility format rupiah
+    function formatRupiah(number){
+      // pastikan number integer
+      const n = Number(number) || 0;
+      return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+    }
+
+    function showSaldo(){
+      saldoEl.textContent = formatRupiah(saldo);
+    }
+
+    function pushLog(text){
+      const d = new Date();
+      const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute:'2-digit', second:'2-digit' });
+      const item = document.createElement('div');
+      item.className = 'log-item';
+      item.textContent = `[${time}] ${text}`;
+      logList.prepend(item);
+    }
+
+    function showNotif(type, text, timeout = 3500){
+      notifArea.innerHTML = '';
+      const n = document.createElement('div');
+      n.className = 'notif ' + (type === 'success' ? 'success' : 'error');
+      n.textContent = text;
+      notifArea.appendChild(n);
+      if(timeout > 0){
+        setTimeout(()=> {
+          if(notifArea.contains(n)) notifArea.removeChild(n);
+        }, timeout);
+      }
+    }
+
+    // inisialisasi tampilan
+    showSaldo();
+    pushLog('Sesi dimulai. Saldo awal ' + formatRupiah(saldo));
+
+    // Tombol cek saldo
+    cekBtn.addEventListener('click', () => {
+      showSaldo();
+      showNotif('success', 'Saldo: ' + formatRupiah(saldo), 1800);
+      pushLog('User mengecek saldo: ' + formatRupiah(saldo));
+      // hide forms
+      tarikForm.style.display = 'none';
+      setorForm.style.display = 'none';
+      infoDefault.style.display = 'block';
+    });
+
+    // tombol tarik
+    tarikBtn.addEventListener('click', () => {
+      infoDefault.style.display = 'none';
+      setorForm.style.display = 'none';
+      tarikForm.style.display = 'block';
+      tarikInput.focus();
+    });
+
+    // tombol setor
+    setorBtn.addEventListener('click', () => {
+      infoDefault.style.display = 'none';
+      tarikForm.style.display = 'none';
+      setorForm.style.display = 'block';
+      setorInput.focus();
+    });
+
+    // tombol keluar -> reset session
+    keluarBtn.addEventListener('click', () => {
+      showNotif('success', 'Terima kasih! Sesi diakhiri.', 2200);
+      pushLog('Sesi diakhiri oleh user. (Keluar)');
+      // reset kecil: hide forms
+      tarikForm.style.display = 'none';
+      setorForm.style.display = 'none';
+      infoDefault.style.display = 'block';
+    });
+
+    // proses tarik
+    doTarik.addEventListener('click', () => {
+      const val = Number(tarikInput.value);
+      if(!val || val <= 0){
+        showNotif('error', 'Masukkan nominal tarik yang valid (lebih dari 0).', 2600);
+        return;
+      }
+      if(val % 1000 !== 0){
+        showNotif('error', 'Gunakan kelipatan 1.000 untuk tarik.', 3000);
+        return;
+      }
+      if(val > saldo){
+        showNotif('error', 'Saldo tidak cukup untuk penarikan ini.', 3000);
+        pushLog('Gagal tarik ' + formatRupiah(val) + ' — saldo tidak cukup');
+        return;
+      }
+      // update saldo
+      saldo = saldo - val;
+      showSaldo();
+      showNotif('success', 'Berhasil tarik ' + formatRupiah(val), 2600);
+      pushLog('Menarik ' + formatRupiah(val) + ' — sisa ' + formatRupiah(saldo));
+      // reset input
+      tarikInput.value = '';
+      tarikForm.style.display = 'none';
+      infoDefault.style.display = 'block';
+    });
+
+    // proses setor
+    doSetor.addEventListener('click', () => {
+      const val = Number(setorInput.value);
+      if(!val || val <= 0){
+        showNotif('error', 'Masukkan nominal setor yang valid (lebih dari 0).', 2600);
+        return;
+      }
+      if(val % 1000 !== 0){
+        showNotif('error', 'Gunakan kelipatan 1.000 untuk setor.', 3000);
+        return;
+      }
+      saldo = saldo + val;
+      showSaldo();
+      showNotif('success', 'Berhasil setor ' + formatRupiah(val), 2600);
+      pushLog('Menyetor ' + formatRupiah(val) + ' — saldo ' + formatRupiah(saldo));
+      setorInput.value = '';
+      setorForm.style.display = 'none';
+      infoDefault.style.display = 'block';
+    });
+
+    // optional: handle Enter key on inputs
+    tarikInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') doTarik.click(); });
+    setorInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') doSetor.click(); });
+
+  </script>
+</body>
+</html>
